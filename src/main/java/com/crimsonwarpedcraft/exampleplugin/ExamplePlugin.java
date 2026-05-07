@@ -63,7 +63,7 @@ public class ExamplePlugin extends JavaPlugin implements Listener, CommandExecut
             if (npc == null || !npc.getName().equals("Jenny")) return;
 
             // Optional: You can remove this message too if you want it completely silent until the end
-            player.sendMessage("§e[Jenny] Watch this move!");
+            player.sendMessage("<Jenny> Hihi~");
 
             if (hand.getAmount() > 1) {
                 hand.setAmount(hand.getAmount() - 1);
@@ -93,9 +93,6 @@ public class ExamplePlugin extends JavaPlugin implements Listener, CommandExecut
                         
                         Location particleLoc = npc.getEntity().getLocation().add(0, 1, 0);
                         particleLoc.getWorld().spawnParticle(Particle.HEART, particleLoc, 5, 0.5, 0.5, 0.5, 0.0);
-                        
-                        // Keeping the transform message
-                        player.sendMessage("<Jenny> Hihi~");
                     }
                     ticks++;
                 }

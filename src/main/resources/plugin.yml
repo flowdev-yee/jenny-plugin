@@ -1,21 +1,27 @@
-main: crimsonwarpedcraft.exampleplugin
-name: Jenny Plugin
-version: "1.0"
-api-version: "1.12.2" # Use 1.21 for the latest stable Paper API
+name: JennyPlugin
+version: 1.0
+main: crimsonwarpedcraft.exampleplugin.ExamplePlugin
 author: secret
-description: hehe
-depend: [Citizens] # Critical: This prevents errors when accessing SkinTrait
+description: Summoning plugin with Citizens dependency
+depend: [Citizens]
+
 commands:
+  jenny:
+    description: Summon Jenny
+    usage: /<command>
+    aliases: [jspawn]
+    permission: example.test
   ex:
     description: Base command for EXAMPLE
-    usage: "For a list of commands, type /ex help"
+    usage: /ex help
     aliases: [example]
+
 permissions:
   example.test:
-    description: DESCRIPTION
+    description: Allows you to use /jenny
     default: true
   example.*:
-    description: Grants all other permissions
-    default: false
+    description: Grants all example permissions
+    default: op
     children:
       example.test: true

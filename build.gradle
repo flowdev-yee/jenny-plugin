@@ -61,7 +61,7 @@ repositories {
 // -------------------- DEPENDENCIES --------------------
 
 dependencies {
-    compileOnly "io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT"
+    compileOnly "io.papermc.paper:paper-api:26.1.2.build.60-stable"
 
     // Citizens NPC system (for custom characters)
     compileOnly "net.citizensnpcs:citizens-main:2.0.33-SNAPSHOT"
@@ -72,7 +72,7 @@ dependencies {
 
     spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0"
 
-    testImplementation "io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT"
+    testImplementation "io.papermc.paper:paper-api:26.1.2.build.60-stable"
     testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
 }
 

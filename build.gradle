@@ -4,8 +4,8 @@ import java.text.SimpleDateFormat
 plugins {
     id 'java'
     id 'checkstyle'
-    id 'com.github.spotbugs' version '6.5.0'
-    id 'com.gradleup.shadow' version '9.4.1'
+    id 'com.github.spotbugs' version '6.0.20' // Adjusted for better Java 8 compatibility
+    id 'com.gradleup.shadow' version '8.3.0'
 }
 
 group = "com.crimsonwarpedcraft.exampleplugin"
@@ -22,18 +22,19 @@ def shortVersion = project.hasProperty('ver') ? project.ver.toString() : null
 
 if (shortVersion == null || shortVersion.isEmpty()) {
     version = getTime() + "-SNAPSHOT"
-} else if (shortVersion.contains("-RC-")) {
-    version = shortVersion.substring(0, shortVersion.indexOf("-RC-")) + "-SNAPSHOT"
 } else {
-    version = shortVersion.startsWith("v")
-            ? shortVersion.substring(1)
-            : shortVersion
+    version = shortVersion.startsWith("v") ? shortVersion.substring(1) : shortVersion
 }
 
-// -------------------- JAVA --------------------
+// -------------------- JAVA (CRITICAL FOR 1.12.2) --------------------
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    // 1.12.2 MUST be compiled with Java 8 for maximum compatibility
+    toolchain.languageVersion.set(JavaLanguageVersion.of(8))
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
 }
 
 // -------------------- REPOSITORIES --------------------
@@ -47,11 +48,10 @@ repositories {
     }
 
     maven {
-        name = "minecraft"
-        url = "https://libraries.minecraft.net"
+        name = "spigotmc-public"
+        url = "https://hub.spigotmc.org/nexus/content/repositories/public/"
     }
 
-    // ✔ Citizens NPC plugin repo (IMPORTANT for your custom character system)
     maven {
         name = "citizens"
         url = "https://maven.citizensnpcs.co/repo"
@@ -61,18 +61,16 @@ repositories {
 // -------------------- DEPENDENCIES --------------------
 
 dependencies {
-    compileOnly "io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT"
+    // Changed from 1.21 to 1.12.2
+    compileOnly "org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT"
 
-    // Citizens NPC system (for custom characters)
-    compileOnly "net.citizensnpcs:citizens-main:2.0.33-SNAPSHOT"
+    // Citizens version for 1.12.2
+    compileOnly "net.citizensnpcs:citizens-main:2.0.24-SNAPSHOT"
 
     implementation "io.papermc:paperlib:1.0.8"
+    compileOnly "com.github.spotbugs:spotbugs-annotations:4.8.4"
+    spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0"
 
-    compileOnly "com.github.spotbugs:spotbugs-annotations:4.9.8"
-
-    spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0"
-
-    testImplementation "io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT"
     testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
 }
 
@@ -85,12 +83,15 @@ test {
 // -------------------- RESOURCE PROCESSING --------------------
 
 processResources {
+    def props = [
+            NAME: rootProject.name,
+            VERSION: version,
+            PACKAGE: group.toString()
+    ]
+    inputs.properties props
+    filteringCharset 'UTF-8'
     filesMatching("plugin.yml") {
-        expand(
-                NAME: rootProject.name,
-                VERSION: version,
-                PACKAGE: rootProject.group.toString()
-        )
+        expand props
     }
 }
 
@@ -121,39 +122,19 @@ tasks.withType(SpotBugsTask).configureEach {
 
 shadowJar {
     archiveClassifier.set("")
-
-    // Keep PaperLib relocation safe
-    relocate "io.papermc.lib", "shadow.io.papermc.lib"
-
+    relocate "io.papermc.lib", "crimsonwarpedcraft.libs.paperlib"
     minimize()
 }
 
-// Disable default jar
+// Ensure build triggers shadowJar
 jar.enabled = false
+assemble.dependsOn shadowJar
 
-build {
-    dependsOn shadowJar
-}
-
-// -------------------- OPTIONAL TASKS --------------------
-
-tasks.register("printProjectName") {
-    doLast {
-        println rootProject.name
-    }
-}
+// -------------------- RELEASE TASK --------------------
 
 tasks.register("release") {
-    dependsOn build
-
+    dependsOn shadowJar
     doLast {
-        if (!version.toString().endsWith("-SNAPSHOT")) {
-            def jarFile = shadowJar.archiveFile.get().asFile
-            def target = new File(
-                    layout.buildDirectory.get().asFile,
-                    "libs/${rootProject.name}.jar"
-            )
-            jarFile.renameTo(target)
-        }
+        println "Build Complete: ${shadowJar.archiveFile.get().asFile.name}"
     }
 }

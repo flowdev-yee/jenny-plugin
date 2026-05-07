@@ -2,98 +2,103 @@ import com.github.spotbugs.snom.SpotBugsTask
 import java.text.SimpleDateFormat
 
 plugins {
-    id 'checkstyle'
-    id "com.github.spotbugs" version "6.5.0"
-    id 'com.gradleup.shadow' version '9.4.1'
     id 'java'
+    id 'checkstyle'
+    id 'com.github.spotbugs' version '6.5.0'
+    id 'com.gradleup.shadow' version '9.4.1'
 }
 
 group = "com.crimsonwarpedcraft.exampleplugin"
 
+// -------------------- VERSIONING --------------------
+
 static def getTime() {
     SimpleDateFormat sdf = new SimpleDateFormat("yyMMdd-HHmm")
     sdf.setTimeZone(TimeZone.getTimeZone("UTC"))
-    return sdf.format(new Date()).toString()
+    return sdf.format(new Date())
 }
 
-// Set version to version property if supplied
-String shortVersion = null
-if (hasProperty('ver')) {
-    if (ver.charAt(0) == "v") {
-        shortVersion = ver.substring(1).toUpperCase()
-    } else {
-        shortVersion = ver.toUpperCase()
-    }
-}
+def shortVersion = project.hasProperty('ver') ? project.ver.toString() : null
 
-// If the tag includes "-RC-" or no tag is supplied, append "-SNAPSHOT"
-int rcIdx
-if (shortVersion == null || shortVersion == "") {
+if (shortVersion == null || shortVersion.isEmpty()) {
     version = getTime() + "-SNAPSHOT"
-} else if ((rcIdx = shortVersion.indexOf("-RC-")) != -1) {
-    version = shortVersion.substring(0, rcIdx) + "-SNAPSHOT"
+} else if (shortVersion.contains("-RC-")) {
+    version = shortVersion.substring(0, shortVersion.indexOf("-RC-")) + "-SNAPSHOT"
 } else {
-    version = shortVersion
+    version = shortVersion.startsWith("v")
+            ? shortVersion.substring(1)
+            : shortVersion
 }
+
+// -------------------- JAVA --------------------
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
+
+// -------------------- REPOSITORIES --------------------
 
 repositories {
-    maven {
-        name = 'papermc'
-        url = 'https://repo.papermc.io/repository/maven-public/'
-        content {
-            includeModule("io.papermc.paper", "paper-api")
-            includeModule("io.papermc", "paperlib")
-            includeModule("net.md-5", "bungeecord-chat")
-            includeGroup("io.papermc.adventure")
-        }
-    }
-
-    maven {
-        name = 'minecraft'
-        url = 'https://libraries.minecraft.net'
-        content {
-            includeModule("com.mojang", "brigadier")
-        }
-    }
-
     mavenCentral()
+
+    maven {
+        name = "papermc"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
+
+    maven {
+        name = "minecraft"
+        url = "https://libraries.minecraft.net"
+    }
+
+    // ✔ Citizens NPC plugin repo (IMPORTANT for your custom character system)
+    maven {
+        name = "citizens"
+        url = "https://maven.citizensnpcs.co/repo"
+    }
 }
+
+// -------------------- DEPENDENCIES --------------------
 
 dependencies {
-    compileOnly 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.9.8'
-    implementation 'io.papermc:paperlib:1.0.8'
-    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
-    testCompileOnly 'com.github.spotbugs:spotbugs-annotations:4.9.8'
-    testImplementation 'io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT'
-    testImplementation 'org.junit.jupiter:junit-jupiter:6.0.3'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:6.0.3'
+    compileOnly "io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT"
+
+    // Citizens NPC system (for custom characters)
+    compileOnly "net.citizensnpcs:citizens-main:2.0.33-SNAPSHOT"
+
+    implementation "io.papermc:paperlib:1.0.8"
+
+    compileOnly "com.github.spotbugs:spotbugs-annotations:4.9.8"
+
+    spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0"
+
+    testImplementation "io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT"
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
 }
+
+// -------------------- TEST --------------------
 
 test {
     useJUnitPlatform()
 }
 
+// -------------------- RESOURCE PROCESSING --------------------
+
 processResources {
-    filesMatching("**/plugin.yml") {
-        expand ( NAME: rootProject.name, VERSION: version, PACKAGE: rootProject.group.toString() )
+    filesMatching("plugin.yml") {
+        expand(
+                NAME: rootProject.name,
+                VERSION: version,
+                PACKAGE: rootProject.group.toString()
+        )
     }
 }
+
+// -------------------- CHECKSTYLE --------------------
 
 checkstyle {
-    toolVersion = '12.3.0'
+    toolVersion = "10.12.4"
     maxWarnings = 0
-}
-
-configurations.checkstyle {
-    resolutionStrategy.capabilitiesResolution.withCapability("com.google.collections:google-collections") {
-        select("com.google.guava:guava:23.0")
-    }
 }
 
 tasks.withType(Checkstyle).configureEach {
@@ -103,40 +108,52 @@ tasks.withType(Checkstyle).configureEach {
     }
 }
 
+// -------------------- SPOTBUGS --------------------
+
 tasks.withType(SpotBugsTask).configureEach {
-    reports.create("html") {
-        required = true
-    }
-    reports.create("xml") {
-        required = false
+    reports {
+        html.required = true
+        xml.required = false
     }
 }
 
+// -------------------- SHADOW JAR --------------------
+
 shadowJar {
-    archiveClassifier.set('')
-    relocate 'io.papermc.lib', 'shadow.io.papermc.paperlib'
+    archiveClassifier.set("")
+
+    // Keep PaperLib relocation safe
+    relocate "io.papermc.lib", "shadow.io.papermc.lib"
+
     minimize()
 }
 
-// Disable jar and replace with shadowJar
+// Disable default jar
 jar.enabled = false
-assemble.dependsOn(shadowJar)
 
-tasks.register('printProjectName') {
+build {
+    dependsOn shadowJar
+}
+
+// -------------------- OPTIONAL TASKS --------------------
+
+tasks.register("printProjectName") {
     doLast {
         println rootProject.name
     }
 }
 
-tasks.register('release') {
+tasks.register("release") {
     dependsOn build
 
     doLast {
-        if (!version.endsWith("-SNAPSHOT")) {
-            // Rename final JAR to trim off version information
-            shadowJar.archiveFile.get().getAsFile()
-                    .renameTo(layout.buildDirectory.get().toString() + File.separator + 'libs' + File.separator
-                            + rootProject.name + '.jar')
+        if (!version.toString().endsWith("-SNAPSHOT")) {
+            def jarFile = shadowJar.archiveFile.get().asFile
+            def target = new File(
+                    layout.buildDirectory.get().asFile,
+                    "libs/${rootProject.name}.jar"
+            )
+            jarFile.renameTo(target)
         }
     }
 }

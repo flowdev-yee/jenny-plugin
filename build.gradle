@@ -62,7 +62,7 @@ repositories {
 
 dependencies {
     // Changed from 1.21 to 1.12.2
-    compileOnly "org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT"
+    compileOnly "org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT"
 
     // Citizens version for 1.12.2
     compileOnly "net.citizensnpcs:citizens-main:2.0.24-SNAPSHOT"

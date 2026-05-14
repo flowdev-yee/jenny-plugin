@@ -65,7 +65,7 @@ dependencies {
     compileOnly "org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT"
 
     // Citizens version for 1.12.2
-    compileOnly "net.citizensnpcs:citizens-main:2.0.24-SNAPSHOT"
+    compileOnly "net.citizensnpcs:citizens-main:2.0.42-SNAPSHOT"
 
     implementation "io.papermc:paperlib:1.0.8"
     compileOnly "com.github.spotbugs:spotbugs-annotations:4.8.4"
